@@ -1,0 +1,10 @@
+version: '2'
+services:
+  vibeville:
+    image: tmokhele/mediamanager:latest
+    stdin_open: true
+    tty: true
+    labels:
+      io.rancher.container.pull_image: always
+      id: mediamanager
+
