@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -37,14 +38,16 @@ public class MediaManagerServiceImpl implements MediaManagerService {
             try {
                 File f = Files.createTempFile("temp", aFile.getDocName()).toFile();
                 FileOutputStream outputStream = new FileOutputStream(f);
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.append(MessageFormat.format("{0}",aFile.getDocName()));
                 outputStream.write(aFile.getFile());
                 outputStream.close();
-                Map params2 = ObjectUtils.asMap("use_filename", true, "unique_filename", false, "folder", String.format("{0}/{1}",aFile.getDocName(),aFile.getFileName()),
-                        "public_id", String.format("{0}/{1}",aFile.getDocName(),aFile.getFileName()));
+                Map params2 = ObjectUtils.asMap("use_filename", true, "unique_filename", false, "folder", stringBuilder.toString(),
+                        "public_id", MessageFormat.format("{0}/{1}",aFile.getDocName(),aFile.getFileName()));
                 Map response =  aFile.getDocName().equalsIgnoreCase("image")? c.uploader().upload(f, params2): c.uploader().upload(f,
-                        ObjectUtils.asMap("resource_type", aFile.getDocName(),
-                                "use_filename", true, "unique_filename", false,"folder", String.format("{0}/{1}",aFile.getDocName(),aFile.getFileName()),
-                                "public_id", String.format("{0}/{1}",aFile.getDocName(),aFile.getFileName())));
+                        ObjectUtils.asMap("resource_type", "raw",
+                                "use_filename", true, "unique_filename", false,
+                                "public_id", MessageFormat.format("{0}/{1}",aFile.getDocName(),aFile.getFileName())));
                 JSONObject json = new JSONObject(response);
                 picURLS.add(json.getString("url"));
             } catch (IOException e) {
