@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -42,10 +43,13 @@ public class MediaManagerServiceImpl implements MediaManagerService {
                 stringBuilder.append(MessageFormat.format("{0}",aFile.getDocName()));
                 outputStream.write(aFile.getFile());
                 outputStream.close();
-                Map params2 = ObjectUtils.asMap("use_filename", true, "unique_filename", false, "folder", stringBuilder.toString(),
-                        "public_id", MessageFormat.format("{0}/{1}",aFile.getDocName(),aFile.getFileName()));
+                Map params2 = null;
+                if (aFile.getDocName().equalsIgnoreCase("image")) {
+                    params2 = ObjectUtils.asMap("use_filename", true, "unique_filename",
+                            "public_id", MessageFormat.format("{0}/{1}", aFile.getDocName(), aFile.getFileName()));
+                }
                 Map response =  aFile.getDocName().equalsIgnoreCase("image")? c.uploader().upload(f, params2): c.uploader().upload(f,
-                        ObjectUtils.asMap("resource_type", "raw",
+                        ObjectUtils.asMap("resource_type", aFile.getDocName().equalsIgnoreCase("video")?aFile.getDocName():"raw",
                                 "use_filename", true, "unique_filename", false,
                                 "public_id", MessageFormat.format("{0}/{1}",aFile.getDocName(),aFile.getFileName())));
                 JSONObject json = new JSONObject(response);
@@ -59,20 +63,32 @@ public class MediaManagerServiceImpl implements MediaManagerService {
     }
 
     @Override
-    public List<String> getFiles() {
+    public   Map<String, String> getFiles(String mediaType) {
         Cloudinary c = getCloudinaryClient();
-        List<String> retUrls = new ArrayList<>();
+        String jsonNext=null;
+        JSONObject json =null;
+        boolean isMoreAvailable = true;
+        Map<String, String> files = new HashMap<>();
         try {
-            Map response = c.api().resource("", ObjectUtils.asMap("type", "upload"));
-            JSONObject json = new JSONObject(response);
-            JSONArray ja = json.getJSONArray("resources");
-            for (int i = 0; i < ja.length(); i++) {
-                JSONObject j = ja.getJSONObject(i);
-                retUrls.add(j.getString("url"));
+            while(isMoreAvailable) {
+                Map response = c.api().resources(ObjectUtils.asMap("max_results", 500, "next_cursor", jsonNext,   "resource_type", !mediaType.equalsIgnoreCase("audio")?mediaType:"raw"));
+                json = new JSONObject(response);
+                if (json.has("next_cursor")) {
+                    jsonNext = json.get("next_cursor").toString();
+                    isMoreAvailable = true;
+                }else {
+                    isMoreAvailable = false;
+                }
+                JSONArray ja = json.getJSONArray("resources");
+                for (int i = 0; i < ja.length(); i++) {
+                    JSONObject j = ja.getJSONObject(i);
+                    String[] public_ids = j.getString("public_id").split("/");
+                    files.put(public_ids[1],j.getString("url"));
+                }
             }
         } catch (Exception e) {
         }
-        return retUrls;
+        return files;
     }
 
     private Cloudinary getCloudinaryClient() {

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping(value = "/api/cloud")
@@ -19,8 +20,8 @@ public class MediaController {
 
 
     @GetMapping
-    public ResponseEntity<List<String>> get() {
-       return ResponseEntity.status(HttpStatus.OK).body(mediaManagerService.getFiles());
+    public ResponseEntity<Map<String, String>> get(String mediaType) {
+       return ResponseEntity.status(HttpStatus.OK).body(mediaManagerService.getFiles(mediaType));
     }
 
 
