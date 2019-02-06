@@ -19,9 +19,9 @@ public class MediaController {
     MediaManagerService mediaManagerService;
 
 
-    @GetMapping
-    public ResponseEntity<Map<String, String>> get(String mediaType) {
-       return ResponseEntity.status(HttpStatus.OK).body(mediaManagerService.getFiles(mediaType));
+    @GetMapping("/{documentType}")
+    public ResponseEntity<Map<String, String>> get(@PathVariable String documentType) {
+       return ResponseEntity.status(HttpStatus.OK).body(mediaManagerService.getFiles(documentType));
     }
 
 
