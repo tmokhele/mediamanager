@@ -24,6 +24,11 @@ public class MediaController {
        return ResponseEntity.status(HttpStatus.OK).body(mediaManagerService.getFiles(documentType));
     }
 
+    @PostMapping("/remove")
+    public ResponseEntity deleteFile(@RequestBody String media){
+
+        return ResponseEntity.status(HttpStatus.OK).body(mediaManagerService.deleteFile(media));
+    }
 
     @PostMapping
     public ResponseEntity upload(@RequestBody List<FileUpload> fileUploads) throws IOException {

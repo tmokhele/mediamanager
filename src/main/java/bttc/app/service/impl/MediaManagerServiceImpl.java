@@ -35,12 +35,12 @@ public class MediaManagerServiceImpl implements MediaManagerService {
     public List<String> upLoadFiles(List<FileUpload> fileUploads) {
         List<String> picURLS = new ArrayList<>();
         Cloudinary c = getCloudinaryClient();
-        fileUploads.forEach(aFile ->{
+        fileUploads.forEach(aFile -> {
             try {
                 File f = Files.createTempFile("temp", aFile.getDocName()).toFile();
                 FileOutputStream outputStream = new FileOutputStream(f);
                 StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.append(MessageFormat.format("{0}",aFile.getDocName()));
+                stringBuilder.append(MessageFormat.format("{0}", aFile.getDocName()));
                 outputStream.write(aFile.getFile());
                 outputStream.close();
                 Map params2 = null;
@@ -48,10 +48,10 @@ public class MediaManagerServiceImpl implements MediaManagerService {
                     params2 = ObjectUtils.asMap("use_filename", true, "unique_filename",
                             "public_id", MessageFormat.format("{0}/{1}", aFile.getDocName(), aFile.getFileName()));
                 }
-                Map response =  aFile.getDocName().equalsIgnoreCase("image")? c.uploader().upload(f, params2): c.uploader().upload(f,
-                        ObjectUtils.asMap("resource_type", aFile.getDocName().equalsIgnoreCase("video")?aFile.getDocName():"raw",
+                Map response = aFile.getDocName().equalsIgnoreCase("image") ? c.uploader().upload(f, params2) : c.uploader().upload(f,
+                        ObjectUtils.asMap("resource_type", aFile.getDocName().equalsIgnoreCase("video") ? aFile.getDocName() : "raw",
                                 "use_filename", true, "unique_filename", false,
-                                "public_id", MessageFormat.format("{0}/{1}",aFile.getDocName(),aFile.getFileName())));
+                                "public_id", MessageFormat.format("{0}/{1}", aFile.getDocName(), aFile.getFileName())));
                 JSONObject json = new JSONObject(response);
                 picURLS.add(json.getString("url"));
             } catch (IOException e) {
@@ -63,32 +63,43 @@ public class MediaManagerServiceImpl implements MediaManagerService {
     }
 
     @Override
-    public   Map<String, String> getFiles(String mediaType) {
+    public Map<String, String> getFiles(String mediaType) {
         Cloudinary c = getCloudinaryClient();
-        String jsonNext=null;
-        JSONObject json =null;
+        String jsonNext = null;
+        JSONObject json = null;
         boolean isMoreAvailable = true;
         Map<String, String> files = new HashMap<>();
         try {
-            while(isMoreAvailable) {
-                Map response = c.api().resources(ObjectUtils.asMap("max_results", 500, "next_cursor", jsonNext,   "resource_type", !mediaType.equalsIgnoreCase("audio")?mediaType:"raw"));
+            while (isMoreAvailable) {
+                Map response = c.api().resources(ObjectUtils.asMap("max_results", 500, "next_cursor", jsonNext, "resource_type", !mediaType.equalsIgnoreCase("audio") ? mediaType : "raw"));
                 json = new JSONObject(response);
                 if (json.has("next_cursor")) {
                     jsonNext = json.get("next_cursor").toString();
                     isMoreAvailable = true;
-                }else {
+                } else {
                     isMoreAvailable = false;
                 }
                 JSONArray ja = json.getJSONArray("resources");
                 for (int i = 0; i < ja.length(); i++) {
                     JSONObject j = ja.getJSONObject(i);
                     String[] public_ids = j.getString("public_id").split("/");
-                    files.put(public_ids[1],j.getString("url"));
+                    files.put(public_ids[1], j.getString("url"));
                 }
             }
         } catch (Exception e) {
         }
         return files;
+    }
+
+    public boolean deleteFile(String url) {
+        Cloudinary c = getCloudinaryClient();
+        try {
+          c.uploader().destroy(url, ObjectUtils.asMap("invalidate", true));
+          return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     private Cloudinary getCloudinaryClient() {
